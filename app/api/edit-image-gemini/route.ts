@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       responseModalities: ['IMAGE', 'TEXT'],
     }
     
-    const model = 'models/gemini-2.0-flash-preview-image-generation'
+    const model = 'gemini-2.5-flash-image-preview'
     
     // Convert the current image URL to base64 if it's a data URL
     let imageData = currentImage

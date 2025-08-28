@@ -21,14 +21,26 @@ export async function POST(request: NextRequest) {
       responseModalities: ['IMAGE', 'TEXT'],
     }
     
-    const model = 'models/gemini-2.0-flash-preview-image-generation'
+    const model = 'gemini-2.5-flash-image-preview'
     
+    // Enhanced prompt for website generation (same as OpenAI)
+    const enhancedPrompt = `Generate a modern, professional website design as a single webpage screenshot. ${prompt}. 
+    The design should be clean, modern, and look like a real website with:
+    - A header with navigation
+    - Hero section with compelling content
+    - Well-organized sections
+    - Professional typography and spacing
+    - Modern color scheme and layout
+    - Responsive design elements
+    - High-quality, polished appearance
+    Make it look like a screenshot of an actual website, not a mockup or wireframe.`
+
     const contents = [
       {
         role: 'user',
         parts: [
           {
-            text: prompt,
+            text: enhancedPrompt,
           },
         ],
       },

@@ -5,6 +5,7 @@ import { PromptInput } from './PromptInput'
 import { InteractiveImage } from './InteractiveImage'
 import { useImageAPI } from '@/hooks/useImageAPI'
 import { useSupabase } from '@/hooks/useSupabase'
+import { useTextAnalysis } from '@/hooks/useTextAnalysis'
 
 export interface WebsiteSession {
   id: string
@@ -21,6 +22,7 @@ export interface ClickPoint {
   timestamp: Date
   description: string
   imageWithDot: string // The image with the red dot that was sent to the API
+  textAnalysis?: string // GPT-4o analysis of what was clicked
 }
 
 export function WebsiteGenerator() {
@@ -28,9 +30,11 @@ export function WebsiteGenerator() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [provider, setProvider] = useState<'openai' | 'gemini' | 'flux'>('openai')
+  const [textAssisted, setTextAssisted] = useState(false)
   
   const { generateImage, editImage } = useImageAPI()
   const { saveSession, loadSession } = useSupabase()
+  const { analyzePrompt, isAnalyzing } = useTextAnalysis()
 
   // Helper function to create an image with a red dot
   const createImageWithDot = useCallback(async (imageUrl: string, x: number, y: number): Promise<string> => {
@@ -76,7 +80,17 @@ export function WebsiteGenerator() {
       setIsGenerating(true)
       setError(null)
       
-      const imageData = await generateImage(prompt, provider)
+      let enhancedPrompt = prompt
+      
+      // If text-assisted mode is enabled, get GPT-4o analysis
+      if (textAssisted) {
+        const analysis = await analyzePrompt(prompt, 'initial')
+        if (analysis) {
+          enhancedPrompt = `${prompt}\n\nUI Analysis: ${analysis.analysis}`
+        }
+      }
+      
+      const imageData = await generateImage(enhancedPrompt, provider)
       
       const newSession: WebsiteSession = {
         id: Date.now().toString(),
@@ -107,28 +121,44 @@ export function WebsiteGenerator() {
       // Create image with red dot
       const imageWithDot = await createImageWithDot(session.currentImage, x, y)
       
+      let textAnalysis = ''
+      
+      // If text-assisted mode is enabled, get GPT-4o analysis of the click
+      if (textAssisted) {
+        const analysis = await analyzePrompt(session.initialPrompt, 'edit', { x, y })
+        if (analysis) {
+          textAnalysis = analysis.analysis
+        }
+      }
+      
       const clickPoint: ClickPoint = {
         x,
         y,
         timestamp: new Date(),
         description: `User clicked at position (${x}, ${y})`,
-        imageWithDot: imageWithDot
+        imageWithDot: imageWithDot,
+        textAnalysis: textAnalysis
       }
       
-              // Create system prompt for the edit with specific coordinates
-        const editPrompt = `The user clicked at position notated by the red dot on this website image. 
-        
-        IMPORTANT: Make DRAMATIC and OBVIOUS changes to this website. Either:
-        1. Navigate to a completely different page (like product page, cart, contact page, etc.)
-        2. Add significant new content sections, menus, or elements
-        3. Change the layout substantially 
-        4. Show a modal, popup, or overlay
-        
-        Think about what would normally happen to a website if the user clicked on the element shown via the red dot. Make the change VERY obvious and dramatic.
-        
-        Original prompt: "${session.initialPrompt}"
-        
-        Generate a completely new and visibly different 1024x1024 website image that shows major evolution.`
+      // Create system prompt for the edit with specific coordinates
+      let editPrompt = `The user clicked at position notated by the red dot on this website image. 
+      
+      IMPORTANT: Make DRAMATIC and OBVIOUS changes to this website. Either:
+      1. Navigate to a completely different page (like product page, cart, contact page, etc.)
+      2. Add significant new content sections, menus, or elements
+      3. Change the layout substantially 
+      4. Show a modal, popup, or overlay
+      
+      Think about what would normally happen to a website if the user clicked on the element shown via the red dot. Make the change VERY obvious and dramatic.
+      
+      Original prompt: "${session.initialPrompt}"
+      
+      Generate a completely new and visibly different 1024x1024 website image that shows major evolution.`
+      
+      // If text-assisted mode is enabled, enhance the prompt with GPT-4o analysis
+      if (textAssisted && textAnalysis) {
+        editPrompt = `${editPrompt}\n\nClick Analysis: ${textAnalysis}`
+      }
       
       const newImageData = await editImage(imageWithDot, editPrompt, provider)
       
@@ -196,6 +226,33 @@ export function WebsiteGenerator() {
             </button>
           </div>
         </div>
+        
+        {/* Text-Assisted Mode Toggle */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-md font-medium text-gray-800">Text-Assisted Mode</h4>
+              <p className="text-sm text-gray-600">Use GPT-4o to analyze and enhance prompts</p>
+            </div>
+            <button
+              onClick={() => setTextAssisted(!textAssisted)}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                textAssisted
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {textAssisted ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
+          <div className="mt-2 text-xs text-gray-500">
+            {textAssisted 
+              ? 'GPT-4o will analyze your prompts and clicks to provide intelligent suggestions'
+              : 'Direct image generation without text analysis'
+            }
+          </div>
+        </div>
+        
         <div className="mt-2 text-xs text-gray-500">
           {provider === 'openai' 
             ? 'Using OpenAI GPT-Image-1 for high-quality website generation'
@@ -207,7 +264,7 @@ export function WebsiteGenerator() {
       </div>
 
       {!session ? (
-        <PromptInput onSubmit={handleInitialPrompt} isLoading={isGenerating} />
+        <PromptInput onSubmit={handleInitialPrompt} isLoading={isGenerating || isAnalyzing} />
       ) : (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
@@ -231,7 +288,7 @@ export function WebsiteGenerator() {
             imageUrl={session.currentImage}
             onClick={handleImageClick}
             clickHistory={session.clickHistory}
-            isLoading={isGenerating}
+            isLoading={isGenerating || isAnalyzing}
           />
           
           {session.clickHistory.length > 0 && (
@@ -248,6 +305,12 @@ export function WebsiteGenerator() {
                       <p className="text-xs text-gray-500">
                         Time: {click.timestamp.toLocaleTimeString()}
                       </p>
+                      {click.textAnalysis && (
+                        <div className="mt-2 p-2 bg-green-50 rounded border-l-2 border-green-400">
+                          <p className="text-xs font-medium text-green-800 mb-1">GPT-4o Analysis:</p>
+                          <p className="text-xs text-green-700">{click.textAnalysis}</p>
+                        </div>
+                      )}
                     </div>
                     <div className="relative">
                       <img
