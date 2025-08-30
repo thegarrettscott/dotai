@@ -3,9 +3,11 @@
 import { useState, useRef, useCallback } from 'react'
 import { PromptInput } from './PromptInput'
 import { InteractiveImage } from './InteractiveImage'
+import { InvisibleTextInput } from './InvisibleTextInput'
 import { useImageAPI } from '@/hooks/useImageAPI'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useTextAnalysis } from '@/hooks/useTextAnalysis'
+import { useClickDetection } from '@/hooks/useClickDetection'
 
 export interface WebsiteSession {
   id: string
@@ -23,6 +25,8 @@ export interface ClickPoint {
   description: string
   imageWithDot: string // The image with the red dot that was sent to the API
   textAnalysis?: string // GPT-4o analysis of what was clicked
+  clickType?: 'button' | 'input' // Type of element clicked
+  userText?: string // Text entered by user if input field was clicked
 }
 
 export function WebsiteGenerator() {
@@ -31,10 +35,15 @@ export function WebsiteGenerator() {
   const [error, setError] = useState<string | null>(null)
   const [provider, setProvider] = useState<'openai' | 'gemini' | 'flux'>('openai')
   const [textAssisted, setTextAssisted] = useState(false)
+  const [inputDetectionEnabled, setInputDetectionEnabled] = useState(true)
+  const [showTextInput, setShowTextInput] = useState(false)
+  const [pendingClick, setPendingClick] = useState<{x: number, y: number, imageWithDot: string} | null>(null)
+  const [clickPosition, setClickPosition] = useState<{x: number, y: number} | null>(null)
   
   const { generateImage, editImage } = useImageAPI()
   const { saveSession, loadSession } = useSupabase()
   const { analyzePrompt, isAnalyzing } = useTextAnalysis()
+  const { detectClickType, isDetecting } = useClickDetection()
 
   // Helper function to create an image with a red dot
   const createImageWithDot = useCallback(async (imageUrl: string, x: number, y: number): Promise<string> => {
@@ -111,7 +120,7 @@ export function WebsiteGenerator() {
     }
   }
 
-  const handleImageClick = async (x: number, y: number) => {
+  const handleImageClick = async (x: number, y: number, absoluteX: number, absoluteY: number) => {
     if (!session) return
     
     try {
@@ -121,6 +130,33 @@ export function WebsiteGenerator() {
       // Create image with red dot
       const imageWithDot = await createImageWithDot(session.currentImage, x, y)
       
+      // Only detect click type if input detection is enabled
+      if (inputDetectionEnabled) {
+        const clickDetection = await detectClickType(imageWithDot, { x, y }, session.initialPrompt)
+        
+        if (clickDetection?.clickType === 'input') {
+          // Show text input at click position using absolute coordinates
+          setPendingClick({ x, y, imageWithDot })
+          setClickPosition({ x: absoluteX, y: absoluteY })
+          setShowTextInput(true)
+          setIsGenerating(false)
+          return
+        }
+      }
+      
+      // If button or detection disabled, proceed with normal image generation
+      await processClickAsButton(x, y, imageWithDot)
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to process click')
+      setIsGenerating(false)
+    }
+  }
+
+  const processClickAsButton = async (x: number, y: number, imageWithDot: string, userText?: string) => {
+    if (!session) return
+    
+    try {
       let textAnalysis = ''
       
       // If text-assisted mode is enabled, get GPT-4o analysis of the click
@@ -137,11 +173,19 @@ export function WebsiteGenerator() {
         timestamp: new Date(),
         description: `User clicked at position (${x}, ${y})`,
         imageWithDot: imageWithDot,
-        textAnalysis: textAnalysis
+        textAnalysis: textAnalysis,
+        clickType: 'button',
+        userText: userText
       }
       
       // Create system prompt for the edit with specific coordinates
       let editPrompt = `The user clicked at position notated by the red dot on this website image. 
+      
+      CRITICAL REQUIREMENTS:
+      - DO NOT MAKE IT A MOCKUP, THERE SHOULD BE NOTHING ON THE IMAGE OTHER THAN THE SITE ALL THE WAY TO THE EDGES
+      - DO NOT INCLUDE THE BROWSER HEADER, JUST THE SITES
+      - DO A VERY GOOD JOB, DO NOT BE AFRAID TO BE CREATIVE
+      - ASSUME EVERYTHING THE USER ASKS FOR OR CLICKS ON EXISTS IN THE MOST INTERESTING WAY POSSIBLE
       
       IMPORTANT: Make DRAMATIC and OBVIOUS changes to this website. Either:
       1. Navigate to a completely different page (like product page, cart, contact page, etc.)
@@ -151,9 +195,14 @@ export function WebsiteGenerator() {
       
       Think about what would normally happen to a website if the user clicked on the element shown via the red dot. Make the change VERY obvious and dramatic.
       
-      Original prompt: "${session.initialPrompt}"
+      Original prompt: "${session.initialPrompt}"`
       
-      Generate a completely new and visibly different 1024x1024 website image that shows major evolution.`
+      // Add user text if provided
+      if (userText) {
+        editPrompt += `\n\nUser entered text: "${userText}"`
+      }
+      
+      editPrompt += `\n\nGenerate a completely new and visibly different 1024x1024 website image that shows major evolution. Fill the entire image edge to edge with website content only.`
       
       // If text-assisted mode is enabled, enhance the prompt with GPT-4o analysis
       if (textAssisted && textAnalysis) {
@@ -177,6 +226,25 @@ export function WebsiteGenerator() {
     } finally {
       setIsGenerating(false)
     }
+  }
+
+  const handleTextSubmit = async (text: string) => {
+    if (!pendingClick) return
+    
+    setShowTextInput(false)
+    setClickPosition(null)
+    
+    // Process the click with the user's text
+    await processClickAsButton(pendingClick.x, pendingClick.y, pendingClick.imageWithDot, text)
+    
+    setPendingClick(null)
+  }
+
+  const handleTextCancel = () => {
+    setShowTextInput(false)
+    setClickPosition(null)
+    setPendingClick(null)
+    setIsGenerating(false)
   }
 
   const resetSession = () => {
@@ -252,6 +320,32 @@ export function WebsiteGenerator() {
             }
           </div>
         </div>
+
+        {/* Input Detection Toggle */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-md font-medium text-gray-800">Input Field Detection</h4>
+              <p className="text-sm text-gray-600">Detect input fields and show text input modal</p>
+            </div>
+            <button
+              onClick={() => setInputDetectionEnabled(!inputDetectionEnabled)}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                inputDetectionEnabled
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {inputDetectionEnabled ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
+          <div className="mt-2 text-xs text-gray-500">
+            {inputDetectionEnabled 
+              ? 'GPT-4o will detect input fields and show text input modal'
+              : 'All clicks will be treated as button clicks'
+            }
+          </div>
+        </div>
         
         <div className="mt-2 text-xs text-gray-500">
           {provider === 'openai' 
@@ -264,7 +358,7 @@ export function WebsiteGenerator() {
       </div>
 
       {!session ? (
-        <PromptInput onSubmit={handleInitialPrompt} isLoading={isGenerating || isAnalyzing} />
+        <PromptInput onSubmit={handleInitialPrompt} isLoading={isGenerating || isAnalyzing || isDetecting} />
       ) : (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
@@ -288,7 +382,7 @@ export function WebsiteGenerator() {
             imageUrl={session.currentImage}
             onClick={handleImageClick}
             clickHistory={session.clickHistory}
-            isLoading={isGenerating || isAnalyzing}
+            isLoading={isGenerating || isAnalyzing || isDetecting}
           />
           
           {session.clickHistory.length > 0 && (
@@ -305,6 +399,23 @@ export function WebsiteGenerator() {
                       <p className="text-xs text-gray-500">
                         Time: {click.timestamp.toLocaleTimeString()}
                       </p>
+                      {click.clickType && (
+                        <div className="mt-1">
+                          <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                            click.clickType === 'input' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {click.clickType === 'input' ? '📝 Input Field' : '🔘 Button'}
+                          </span>
+                        </div>
+                      )}
+                      {click.userText && (
+                        <div className="mt-2 p-2 bg-blue-50 rounded border-l-2 border-blue-400">
+                          <p className="text-xs font-medium text-blue-800 mb-1">User Text:</p>
+                          <p className="text-xs text-blue-700">"{click.userText}"</p>
+                        </div>
+                      )}
                       {click.textAnalysis && (
                         <div className="mt-2 p-2 bg-green-50 rounded border-l-2 border-green-400">
                           <p className="text-xs font-medium text-green-800 mb-1">GPT-4o Analysis:</p>
@@ -337,6 +448,15 @@ export function WebsiteGenerator() {
           {error}
         </div>
       )}
+
+      {/* Invisible Text Input Modal */}
+      <InvisibleTextInput
+        isVisible={showTextInput}
+        clickPosition={clickPosition}
+        onTextSubmit={handleTextSubmit}
+        onCancel={handleTextCancel}
+        placeholder="Enter the text you want to add to the input field..."
+      />
     </div>
   )
 }

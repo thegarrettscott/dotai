@@ -38,12 +38,23 @@ export async function POST(request: NextRequest) {
       console.log('Image is not a data URL, using as-is')
     }
 
+    // Enhance the edit prompt with critical requirements
+    const enhancedEditPrompt = `${editPrompt}
+    
+    CRITICAL REQUIREMENTS:
+    - DO NOT MAKE IT A MOCKUP, THERE SHOULD BE NOTHING ON THE IMAGE OTHER THAN THE SITE ALL THE WAY TO THE EDGES
+    - DO NOT INCLUDE THE BROWSER HEADER, JUST THE SITES
+    - DO A VERY GOOD JOB, DO NOT BE AFRAID TO BE CREATIVE
+    - ASSUME EVERYTHING THE USER ASKS FOR OR CLICKS ON EXISTS IN THE MOST INTERESTING WAY POSSIBLE
+    
+    Fill the entire 1024x1024 image with just the website content, edge to edge.`
+
     const contents = [
       {
         role: 'user',
         parts: [
           {
-            text: editPrompt,
+            text: enhancedEditPrompt,
           },
           {
             inlineData: {

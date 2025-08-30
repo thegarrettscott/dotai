@@ -21,6 +21,13 @@ export async function POST(request: NextRequest) {
 
     // Enhanced prompt for website generation
     const enhancedPrompt = `Generate a modern, professional website design as a single webpage screenshot. ${prompt}. 
+    
+    CRITICAL REQUIREMENTS:
+    - DO NOT MAKE IT A MOCKUP, THERE SHOULD BE NOTHING ON THE IMAGE OTHER THAN THE SITE ALL THE WAY TO THE EDGES
+    - DO NOT INCLUDE THE BROWSER HEADER, JUST THE SITES
+    - DO A VERY GOOD JOB, DO NOT BE AFRAID TO BE CREATIVE
+    - ASSUME EVERYTHING THE USER ASKS FOR OR CLICKS ON EXISTS IN THE MOST INTERESTING WAY POSSIBLE
+    
     The design should be clean, modern, and look like a real website with:
     - A header with navigation
     - Hero section with compelling content
@@ -29,7 +36,8 @@ export async function POST(request: NextRequest) {
     - Modern color scheme and layout
     - Responsive design elements
     - High-quality, polished appearance
-    Make it look like a screenshot of an actual website, not a mockup or wireframe.`
+    
+    Make it look like a screenshot of an actual website, not a mockup or wireframe. Fill the entire 1024x1024 image with just the website content, edge to edge.`
 
     const response = await openai.images.generate({
       model: "gpt-image-1",

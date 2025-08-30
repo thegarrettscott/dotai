@@ -6,7 +6,7 @@ import { ClickPoint } from './WebsiteGenerator'
 
 interface InteractiveImageProps {
   imageUrl: string
-  onClick: (x: number, y: number) => void
+  onClick: (x: number, y: number, absoluteX: number, absoluteY: number) => void
   clickHistory: ClickPoint[]
   isLoading: boolean
 }
@@ -32,7 +32,11 @@ export function InteractiveImage({
     const percentX = (x / rect.width) * 100
     const percentY = (y / rect.height) * 100
     
-    onClick(percentX, percentY)
+    // Get absolute coordinates for input field positioning
+    const absoluteX = e.clientX
+    const absoluteY = e.clientY
+    
+    onClick(percentX, percentY, absoluteX, absoluteY)
   }, [onClick, isLoading])
 
   return (

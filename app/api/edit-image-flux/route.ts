@@ -21,12 +21,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Enhance the edit prompt with critical requirements
+    const enhancedEditPrompt = `${editPrompt}
+    
+    CRITICAL REQUIREMENTS:
+    - DO NOT MAKE IT A MOCKUP, THERE SHOULD BE NOTHING ON THE IMAGE OTHER THAN THE SITE ALL THE WAY TO THE EDGES
+    - DO NOT INCLUDE THE BROWSER HEADER, JUST THE SITES
+    - DO A VERY GOOD JOB, DO NOT BE AFRAID TO BE CREATIVE
+    - ASSUME EVERYTHING THE USER ASKS FOR OR CLICKS ON EXISTS IN THE MOST INTERESTING WAY POSSIBLE
+    
+    Fill the entire 1024x1024 image with just the website content, edge to edge.`
+
     // Use Flux Dev for high-quality image-to-image generation
     const output = await replicate.run(
       "black-forest-labs/flux-dev",
       {
         input: {
-          prompt: editPrompt,
+          prompt: enhancedEditPrompt,
           image: currentImage, // Use standard "image" field for Flux Dev
           aspect_ratio: "1:1",
           num_outputs: 1,
