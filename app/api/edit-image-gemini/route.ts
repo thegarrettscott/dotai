@@ -44,10 +44,12 @@ export async function POST(request: NextRequest) {
     CRITICAL REQUIREMENTS:
     - DO NOT MAKE IT A MOCKUP, THERE SHOULD BE NOTHING ON THE IMAGE OTHER THAN THE SITE ALL THE WAY TO THE EDGES
     - DO NOT INCLUDE THE BROWSER HEADER, JUST THE SITES
+    - NO BUFFER, NO BORDER, NO PADDING AROUND THE SITE CONTENT
+    - FILL THE ENTIRE 1024x1024 IMAGE EDGE TO EDGE WITH WEBSITE CONTENT ONLY
     - DO A VERY GOOD JOB, DO NOT BE AFRAID TO BE CREATIVE
     - ASSUME EVERYTHING THE USER ASKS FOR OR CLICKS ON EXISTS IN THE MOST INTERESTING WAY POSSIBLE
     
-    Fill the entire 1024x1024 image with just the website content, edge to edge.`
+    Fill the entire 1024x1024 image with just the website content, edge to edge, no buffer or border around the site content.`
 
     const contents = [
       {

@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Dot AI - Interactive Website Generator',
-  description: 'Generate websites by clicking and iterating with AI',
+  title: 'This Internet Does Not Exist - AI Web Browser',
+  description: 'An AI-powered web browser that generates and navigates the internet that doesn\'t exist',
 }
 
 export default function RootLayout({

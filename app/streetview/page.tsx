@@ -306,7 +306,15 @@ export default function StreetViewPage() {
   const handleImageClick = useCallback((x: number, y: number, absoluteX: number, absoluteY: number) => {
     if (isGenerating) return
     
-    const newClick: ClickPoint = { x, y, absoluteX, absoluteY }
+    const newClick: ClickPoint = { 
+      x, 
+      y, 
+      absoluteX, 
+      absoluteY, 
+      timestamp: new Date(),
+      description: 'Street view click',
+      imageWithDot: ''
+    }
     setClickHistory([newClick]) // Only keep the latest click for street view
   }, [isGenerating])
 
@@ -401,13 +409,13 @@ export default function StreetViewPage() {
       } else {
         // Success - convert blob to base64 immediately and store that
         const blob = await response.blob()
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          const base64Data = reader.result as string
-          console.log('Initial panorama generated as base64, length:', base64Data.length)
-          setPanoramaUrl(base64Data) // Store as base64, not blob URL
-        }
-        reader.readAsDataURL(blob)
+        const base64Data = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(blob)
+        })
+        console.log('Initial panorama generated as base64, length:', base64Data.length)
+        setPanoramaUrl(base64Data) // Store as base64, not blob URL
       }
     } catch (error) {
       console.error('Error generating panorama:', error)
@@ -451,7 +459,15 @@ export default function StreetViewPage() {
 
       // Add a red dot to the panorama to show where user wants to navigate
       console.log('Adding navigation target dot to panorama...')
-      const panoramaWithDot = await addRedDotToImage(panoramaUrl, { x: targetX, y: targetY, absoluteX: 0, absoluteY: 0 })
+      const panoramaWithDot = await addRedDotToImage(panoramaUrl, { 
+        x: targetX, 
+        y: targetY, 
+        absoluteX: 0, 
+        absoluteY: 0,
+        timestamp: new Date(),
+        description: 'Navigation target',
+        imageWithDot: ''
+      })
       console.log('Navigation dot added to panorama, length:', panoramaWithDot.length)
       console.log('Final data starts with:', panoramaWithDot.substring(0, 50))
       
@@ -485,25 +501,25 @@ export default function StreetViewPage() {
       } else {
         // Success - new panorama, convert to base64 immediately
         const blob = await response.blob()
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          const newPanoramaBase64 = reader.result as string
-          console.log('New panorama generated as base64, length:', newPanoramaBase64.length)
-          
-          // Save current state to history
-          if (panoramaUrl) {
-            setNavigationHistory(prev => [...prev, {
-              image: uploadedImage,
-              location: currentLocation,
-              panorama: panoramaUrl
-            }])
-          }
-          
-          // Update to new location
-          setPanoramaUrl(newPanoramaBase64)
-          setCurrentLocation({ x: targetX, y: targetY })
+        const newPanoramaBase64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(blob)
+        })
+        console.log('New panorama generated as base64, length:', newPanoramaBase64.length)
+        
+        // Save current state to history
+        if (panoramaUrl) {
+          setNavigationHistory(prev => [...prev, {
+            image: uploadedImage,
+            location: currentLocation,
+            panorama: panoramaUrl
+          }])
         }
-        reader.readAsDataURL(blob)
+        
+        // Update to new location - this should immediately update the viewer
+        setPanoramaUrl(newPanoramaBase64)
+        setCurrentLocation({ x: targetX, y: targetY })
       }
     } catch (error) {
       console.error('Error navigating:', error)

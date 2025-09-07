@@ -21,6 +21,8 @@ export interface WebsiteSession {
 export interface ClickPoint {
   x: number
   y: number
+  absoluteX?: number
+  absoluteY?: number
   timestamp: Date
   description: string
   imageWithDot: string // The image with the red dot that was sent to the API

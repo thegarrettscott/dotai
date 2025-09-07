@@ -8,7 +8,7 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { imageData, clickPosition, originalPrompt } = await request.json()
+    const { imageData, clickPosition, originalPrompt, currentUrl, clickDescription } = await request.json()
     
     if (!imageData || !clickPosition) {
       return NextResponse.json(
@@ -28,17 +28,30 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: "system",
-          content: `You are a UI/UX expert who analyzes website screenshots to identify interactive elements. Your job is to determine if a clicked area is a button or an input field.
+          content: `You are a UI/UX expert who analyzes website screenshots to identify interactive elements and predict navigation behavior. Your job is to:
 
-IMPORTANT: Be VERY conservative. Default to "button" unless you are absolutely certain the clicked area is a text input field.
+1. Determine if a clicked area is a button or an input field
+2. If it's a button, determine if clicking it would navigate to a new page
+3. If it would navigate to a new page, suggest an appropriate URL for that new page
 
-Respond with ONLY one word:
-- "button" for buttons, links, navigation items, icons, images, or any clickable element (DEFAULT)
-- "input" ONLY if you can clearly see a text input field, search box, or text area with visible input borders/placeholder text
+IMPORTANT: Be decently conservative. Default to "button" unless you are absolutely certain the clicked area is a text input field.
 
-When in doubt, always respond with "button". Only use "input" for obvious text input fields.
+For navigation prediction, consider:
+- Navigation menus, links, buttons that would take you to different sections
+- "Home", "About", "Contact", "Products", "Services", "Login", "Sign Up", etc.
+- Shopping cart, checkout, product pages
+- Search results, category pages
+- Social media links, external links
 
-Do not provide explanations or additional text. Just respond with "button" or "input".`
+Respond in this exact JSON format:
+{
+  "clickType": "button" or "input",
+  "willNavigate": true or false,
+  "newUrl": "suggested-url-if-navigating" or null,
+  "pageName": "descriptive-name-for-new-page" or null
+}
+
+Only set willNavigate to true if you're confident the click would take the user to a different page.`
         },
         {
           role: "user",
@@ -47,9 +60,13 @@ Do not provide explanations or additional text. Just respond with "button" or "i
               type: "text",
               text: `Analyze this website screenshot. The user clicked at position (${clickPosition.x}, ${clickPosition.y}) marked by a red dot. 
 
+Click description: "${clickDescription || 'User clicked on an element'}"
+
+Current URL: "${currentUrl || 'unknown'}"
+
 Original website concept: "${originalPrompt || 'website'}"
 
-Determine if the clicked area is a button or input field. Respond with only "button" or "input".`
+Determine the click type and if it would navigate to a new page. Respond with the JSON format specified.`
             },
             {
               type: "image_url",
@@ -61,32 +78,51 @@ Determine if the clicked area is a button or input field. Respond with only "but
           ]
         }
       ],
-      max_tokens: 5,
-      temperature: 0.0
+      max_tokens: 200,
+      temperature: 0.1
     })
 
-    const clickType = response.choices[0]?.message?.content?.toLowerCase().trim()
+    const responseText = response.choices[0]?.message?.content?.trim()
     const confidence = response.choices[0]?.finish_reason === 'stop' ? 'high' : 'low'
 
-    if (!clickType || (clickType !== 'button' && clickType !== 'input')) {
-      // Default to button if detection fails
+    if (!responseText) {
+      // Default response if no content
       return NextResponse.json({ 
         clickType: 'button',
+        willNavigate: false,
+        newUrl: null,
+        pageName: null,
         confidence: 'low'
       })
     }
 
-    // If it detected "input" but with low confidence, default to button
-    if (clickType === 'input' && confidence === 'low') {
-      return NextResponse.json({ 
-        clickType: 'button',
-        confidence: 'low'
-      })
+    try {
+      // Try to parse as JSON
+      const parsed = JSON.parse(responseText)
+      
+      // Validate the response structure
+      if (parsed.clickType && (parsed.clickType === 'button' || parsed.clickType === 'input')) {
+        return NextResponse.json({
+          clickType: parsed.clickType,
+          willNavigate: parsed.willNavigate || false,
+          newUrl: parsed.newUrl || null,
+          pageName: parsed.pageName || null,
+          confidence
+        })
+      }
+    } catch (error) {
+      console.log('Failed to parse JSON response, falling back to text parsing:', responseText)
     }
 
+    // Fallback: try to extract clickType from text response
+    const clickType = responseText.toLowerCase().includes('input') ? 'input' : 'button'
+    
     return NextResponse.json({ 
       clickType,
-      confidence
+      willNavigate: false,
+      newUrl: null,
+      pageName: null,
+      confidence: 'low'
     })
 
   } catch (error) {
@@ -94,6 +130,9 @@ Determine if the clicked area is a button or input field. Respond with only "but
     // Default to button on error
     return NextResponse.json({ 
       clickType: 'button',
+      willNavigate: false,
+      newUrl: null,
+      pageName: null,
       confidence: 'low'
     })
   }

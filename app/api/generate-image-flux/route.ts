@@ -25,6 +25,8 @@ export async function POST(request: NextRequest) {
     CRITICAL REQUIREMENTS:
     - DO NOT MAKE IT A MOCKUP, THERE SHOULD BE NOTHING ON THE IMAGE OTHER THAN THE SITE ALL THE WAY TO THE EDGES
     - DO NOT INCLUDE THE BROWSER HEADER, JUST THE SITES
+    - NO BUFFER, NO BORDER, NO PADDING AROUND THE SITE CONTENT
+    - FILL THE ENTIRE 1024x1024 IMAGE EDGE TO EDGE WITH WEBSITE CONTENT ONLY
     - DO A VERY GOOD JOB, DO NOT BE AFRAID TO BE CREATIVE
     - ASSUME EVERYTHING THE USER ASKS FOR OR CLICKS ON EXISTS IN THE MOST INTERESTING WAY POSSIBLE
     
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
     - Responsive design elements
     - High-quality, polished appearance
     
-    Make it look like a screenshot of an actual website, not a mockup or wireframe. Fill the entire 1024x1024 image with just the website content, edge to edge.`
+    Make it look like a screenshot of an actual website, not a mockup or wireframe. Fill the entire 1024x1024 image with just the website content, edge to edge, no buffer or border around the site content.`
     
     // Use Flux Dev for high-quality text-to-image generation
     const output = await replicate.run(

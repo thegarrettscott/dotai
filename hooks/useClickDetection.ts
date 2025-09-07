@@ -2,6 +2,9 @@ import { useState } from 'react'
 
 interface ClickDetectionResult {
   clickType: 'button' | 'input'
+  willNavigate?: boolean
+  newUrl?: string | null
+  pageName?: string | null
   confidence: 'high' | 'low'
 }
 
@@ -12,7 +15,9 @@ export function useClickDetection() {
   const detectClickType = async (
     imageData: string,
     clickPosition: { x: number; y: number },
-    originalPrompt: string
+    originalPrompt: string,
+    currentUrl?: string,
+    clickDescription?: string
   ): Promise<ClickDetectionResult | null> => {
     try {
       setIsDetecting(true)
@@ -26,7 +31,9 @@ export function useClickDetection() {
         body: JSON.stringify({
           imageData,
           clickPosition,
-          originalPrompt
+          originalPrompt,
+          currentUrl,
+          clickDescription
         }),
       })
 
@@ -42,7 +49,7 @@ export function useClickDetection() {
       setError(errorMessage)
       console.error('Click detection error:', err)
       // Return default button type on error
-      return { clickType: 'button', confidence: 'low' }
+      return { clickType: 'button', willNavigate: false, newUrl: null, pageName: null, confidence: 'low' }
     } finally {
       setIsDetecting(false)
     }
