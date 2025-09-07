@@ -3,10 +3,14 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
-  experimental: {
-    outputFileTracingExcludes: {
-      '*': ['./spatial-understanding/**/*'],
-    },
+  async redirects() {
+    return [
+      {
+        source: '/((?!browser|api|_next).*)',
+        destination: '/browser',
+        permanent: false,
+      },
+    ]
   },
 }
 

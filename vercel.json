@@ -1,8 +1,0 @@
-{
-  "rewrites": [
-    {
-      "source": "/((?!browser|api|_next).*)",
-      "destination": "/browser"
-    }
-  ]
-}
