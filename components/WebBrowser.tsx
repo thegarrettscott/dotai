@@ -51,6 +51,7 @@ export function WebBrowser() {
   const [pendingClick, setPendingClick] = useState<{x: number, y: number, imageWithDot: string} | null>(null)
   const [clickPosition, setClickPosition] = useState<{x: number, y: number} | null>(null)
   const [inputValues, setInputValues] = useState<{ [key: number]: string }>({})
+  const [showHistory, setShowHistory] = useState(false)
   
   const { generateImage, editImage } = useImageAPI()
   const { analyzePrompt, isAnalyzing } = useTextAnalysis()
@@ -363,7 +364,7 @@ export function WebBrowser() {
             <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
             <div className="w-3 h-3 rounded-full bg-green-500"></div>
           </div>
-          <h2 className="text-sm font-semibold text-black">AI Web Browser</h2>
+          <h2 className="text-sm font-semibold text-black">This Internet Does Not Exist</h2>
           <div className="w-12"></div>
         </div>
         
@@ -544,7 +545,7 @@ export function WebBrowser() {
       </div>
       
       {/* Click History Section */}
-      {currentSession && currentSession.clickHistory.length > 0 && (
+      {showHistory && currentSession && currentSession.clickHistory.length > 0 && (
         <div className="bg-gray-50 border-t border-gray-300 p-4 flex-shrink-0">
           <h3 className="font-semibold text-black mb-3">Click History</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -611,9 +612,24 @@ export function WebBrowser() {
               </span>
             )}
           </span>
-          <span>
-            History: {historyIndex + 1} / {history.length} | Clicks: {currentSession?.clickHistory.length || 0}
-          </span>
+          <div className="flex items-center space-x-4">
+            <span>
+              History: {historyIndex + 1} / {history.length} | Clicks: {currentSession?.clickHistory.length || 0}
+            </span>
+            {currentSession && currentSession.clickHistory.length > 0 && (
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                  showHistory 
+                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                    : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                }`}
+                title={showHistory ? 'Hide click history' : 'Show click history'}
+              >
+                {showHistory ? 'Hide History' : 'Show History'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
       
