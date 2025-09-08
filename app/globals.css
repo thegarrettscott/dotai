@@ -44,3 +44,9 @@ body {
   z-index: 10;
 }
 
+/* Make placeholder text completely transparent */
+input::placeholder {
+  color: transparent !important;
+  opacity: 0 !important;
+}
+

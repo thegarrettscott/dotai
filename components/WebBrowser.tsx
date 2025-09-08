@@ -517,7 +517,7 @@ export function WebBrowser() {
                   type={input.type}
                   placeholder={input.label}
                   value={inputValues[index] || ''}
-                  className="w-full h-full text-black text-sm px-2 py-1 rounded-none focus:outline-none"
+                  className="w-full h-full text-black text-sm px-2 py-1 rounded-none focus:outline-none placeholder-transparent"
                   style={{
                     fontSize: `${Math.max(8, input.height * 400)}px`, // Scale to input field height
                     backgroundColor: 'transparent',
