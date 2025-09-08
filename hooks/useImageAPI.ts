@@ -16,6 +16,8 @@ function blobToDataURL(blob: Blob): Promise<string> {
 export function useImageAPI() {
   const generateImage = useCallback(async (prompt: string, provider?: 'openai' | 'gemini' | 'flux'): Promise<string> => {
     try {
+      console.log('Generating image with prompt:', prompt, 'provider:', provider)
+      
       const response = await fetch('/api/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -23,8 +25,12 @@ export function useImageAPI() {
         signal: AbortSignal.timeout(120000) // 120 seconds timeout
       })
       
+      console.log('Image generation response status:', response.status)
+      
       if (!response.ok) {
-        throw new Error('Failed to generate image')
+        const errorText = await response.text()
+        console.error('Image generation failed:', response.status, errorText)
+        throw new Error(`Failed to generate image: ${response.status} ${errorText}`)
       }
       
       // Check if response is JSON (for OpenAI base64) or blob (for Gemini)

@@ -6,6 +6,11 @@ export async function POST(request: NextRequest) {
     const provider = body.provider || process.env.IMAGE_PROVIDER || 'openai'
     
     console.log('Using image provider:', provider)
+    console.log('Environment variables check:', {
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY ? 'Set' : 'Missing',
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY ? 'Set' : 'Missing',
+      REPLICATE_API_TOKEN: process.env.REPLICATE_API_TOKEN ? 'Set' : 'Missing'
+    })
     
     // Route to the appropriate provider
     if (provider === 'openai') {
@@ -78,7 +83,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error in image generation router:', error)
     return NextResponse.json(
-      { error: 'Failed to generate image' },
+      { 
+        error: 'Failed to generate image',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }
