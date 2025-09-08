@@ -353,9 +353,9 @@ export function WebBrowser() {
   const canGoForward = historyIndex < history.length - 1
 
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+    <div className="bg-white rounded-lg shadow-lg overflow-hidden h-screen flex flex-col">
       {/* Browser Toolbar */}
-      <div className="bg-gray-200 border-b border-gray-300 p-2">
+      <div className="bg-gray-200 border-b border-gray-300 p-2 flex-shrink-0">
         {/* Title Bar */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
@@ -435,7 +435,7 @@ export function WebBrowser() {
       
       {/* Loading Indicator */}
       {(isLoading || isDetectingInputs) && (
-        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
+        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 flex-shrink-0">
           <div className="flex items-center space-x-2">
             <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
             <span className="text-blue-600 text-sm">
@@ -447,7 +447,7 @@ export function WebBrowser() {
       
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border-b border-red-200 px-4 py-2">
+        <div className="bg-red-50 border-b border-red-200 px-4 py-2 flex-shrink-0">
           <div className="flex items-center space-x-2">
             <span className="text-red-600 text-sm">⚠️ {error}</span>
           </div>
@@ -455,7 +455,7 @@ export function WebBrowser() {
       )}
       
       {/* Website Display */}
-      <div className="h-[600px] bg-white overflow-auto">
+      <div className="flex-1 bg-white overflow-auto">
         {currentSession ? (
           <div className="relative">
             <img
@@ -545,7 +545,7 @@ export function WebBrowser() {
       
       {/* Click History Section */}
       {currentSession && currentSession.clickHistory.length > 0 && (
-        <div className="bg-gray-50 border-t border-gray-300 p-4">
+        <div className="bg-gray-50 border-t border-gray-300 p-4 flex-shrink-0">
           <h3 className="font-semibold text-black mb-3">Click History</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {currentSession.clickHistory.map((click, index) => (
@@ -601,7 +601,7 @@ export function WebBrowser() {
       )}
       
       {/* Status Bar */}
-      <div className="bg-gray-100 border-t border-gray-300 px-4 py-2 text-xs text-black">
+      <div className="bg-gray-100 border-t border-gray-300 px-4 py-2 text-xs text-black flex-shrink-0">
         <div className="flex justify-between items-center">
           <span>
             {currentSession ? `Loaded: ${currentSession.url}` : 'Ready'}
