@@ -505,10 +505,15 @@ export function WebBrowser() {
                   type={input.type}
                   placeholder={input.label}
                   value={inputValues[index] || ''}
-                  className="w-full h-full border-2 bg-white bg-opacity-90 text-black text-sm px-2 py-1 rounded-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-full text-black text-sm px-2 py-1 rounded-none focus:outline-none"
                   style={{
                     fontSize: `${Math.max(10, input.height * 200)}px`,
-                    borderColor: 'rgba(0, 0, 0, 0.2)',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    color: 'black',
+                    textShadow: '1px 1px 2px rgba(255, 255, 255, 0.8)',
+                    fontWeight: '500',
                   }}
                   onFocus={(e) => {
                     e.target.select()
