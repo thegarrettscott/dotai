@@ -58,8 +58,8 @@ export function WebBrowser() {
   const { detectClickType, isDetecting } = useClickDetection()
   const { detectInputs, isDetectingInputs } = useInputDetection()
 
-  // Helper function to create an image with a red dot and input text overlay
-  const createImageWithDot = useCallback(async (imageUrl: string, x: number, y: number): Promise<string> => {
+  // Helper function to create an image with text overlaid in input field positions
+  const createImageWithTextOverlay = useCallback(async (imageUrl: string, x: number, y: number): Promise<string> => {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
@@ -88,22 +88,33 @@ export function WebBrowser() {
           ctx.lineWidth = 3
           ctx.stroke()
           
-          // Draw input text values on the image
-          if (Object.keys(inputValues).length > 0) {
-            ctx.fillStyle = 'black'
-            ctx.font = 'bold 16px Arial'
-            ctx.textAlign = 'left'
-            
-            let textY = 30
-            ctx.fillText('User Input Values:', 20, textY)
-            textY += 25
-            
+          // Overlay text directly on input field positions
+          if (currentSession && Object.keys(inputValues).length > 0) {
             Object.entries(inputValues).forEach(([index, value]) => {
-              if (value && value.trim() && currentSession) {
+              if (value && value.trim()) {
                 const input = currentSession.inputFields[parseInt(index)]
-                const label = input?.label || 'Field'
-                ctx.fillText(`${label}: "${value}"`, 20, textY)
-                textY += 20
+                if (input) {
+                  // Calculate input field position on the image
+                  const inputX = (input.x * img.width) + 5 // Small padding from edge
+                  const inputY = (input.y * img.height) + (input.height * img.height * 0.7) // Center vertically in field
+                  
+                  // Set text style
+                  ctx.fillStyle = 'black'
+                  ctx.font = `bold ${Math.max(12, input.height * img.height * 0.3)}px Arial`
+                  ctx.textAlign = 'left'
+                  ctx.textBaseline = 'middle'
+                  
+                  // Add white background for text readability
+                  const textWidth = ctx.measureText(value).width
+                  const textHeight = parseInt(ctx.font) * 1.2
+                  
+                  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
+                  ctx.fillRect(inputX - 2, inputY - textHeight/2 - 2, textWidth + 4, textHeight + 4)
+                  
+                  // Draw the text
+                  ctx.fillStyle = 'black'
+                  ctx.fillText(value, inputX, inputY)
+                }
               }
             })
           }
@@ -214,8 +225,8 @@ export function WebBrowser() {
       setIsLoading(true)
       setError(null)
       
-      // Create image with red dot
-      const imageWithDot = await createImageWithDot(currentSession.imageUrl, x, y)
+      // Create image with text overlay
+      const imageWithDot = await createImageWithTextOverlay(currentSession.imageUrl, x, y)
       
       // Check if click is on an input field
       const clickedInput = currentSession.inputFields.find(input => {
