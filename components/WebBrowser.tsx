@@ -470,11 +470,11 @@ export function WebBrowser() {
       {/* Website Display */}
       <div className="flex-1 bg-white overflow-auto">
         {currentSession ? (
-          <div className="relative">
+          <div className="relative w-full aspect-[16/9] overflow-hidden">
             <img
               src={currentSession.imageUrl}
               alt={`Website: ${currentSession.url}`}
-              className="w-full h-auto cursor-pointer"
+              className="w-full h-full object-cover cursor-pointer"
               onClick={(e) => {
                 // Check if click is on an input field
                 const rect = e.currentTarget.getBoundingClientRect()

@@ -19,6 +19,11 @@ export async function POST(request: NextRequest) {
 
     const config = {
       responseModalities: ['IMAGE', 'TEXT'],
+      generationConfig: {
+        imageGenerationConfig: {
+          aspectRatio: '16:9'
+        }
+      }
     }
     
     const model = 'gemini-2.5-flash-image-preview'
