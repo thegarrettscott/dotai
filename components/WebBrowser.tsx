@@ -98,15 +98,16 @@ export function WebBrowser() {
                   const inputX = (input.x * img.width) + 5 // Small padding from edge
                   const inputY = (input.y * img.height) + (input.height * img.height * 0.7) // Center vertically in field
                   
-                  // Set text style
+                  // Set text style - scale font size to input field height
                   ctx.fillStyle = 'black'
-                  ctx.font = `bold ${Math.max(12, input.height * img.height * 0.3)}px Arial`
+                  const fontSize = Math.max(8, input.height * img.height * 0.6) // Scale to 60% of input height
+                  ctx.font = `bold ${fontSize}px Arial`
                   ctx.textAlign = 'left'
                   ctx.textBaseline = 'middle'
                   
                   // Add white background for text readability
                   const textWidth = ctx.measureText(value).width
-                  const textHeight = parseInt(ctx.font) * 1.2
+                  const textHeight = fontSize * 1.2
                   
                   ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
                   ctx.fillRect(inputX - 2, inputY - textHeight/2 - 2, textWidth + 4, textHeight + 4)
@@ -518,7 +519,7 @@ export function WebBrowser() {
                   value={inputValues[index] || ''}
                   className="w-full h-full text-black text-sm px-2 py-1 rounded-none focus:outline-none"
                   style={{
-                    fontSize: `${Math.max(10, input.height * 200)}px`,
+                    fontSize: `${Math.max(8, input.height * 400)}px`, // Scale to input field height
                     backgroundColor: 'transparent',
                     border: 'none',
                     outline: 'none',
