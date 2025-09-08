@@ -23,27 +23,34 @@ export async function POST(request: NextRequest) {
     
     const model = 'gemini-2.5-flash-image-preview'
     
-    // Enhanced prompt for website generation (same as OpenAI)
-    const enhancedPrompt = `Generate a modern, professional website design as a single webpage screenshot. ${prompt}. 
-    
-    CRITICAL REQUIREMENTS:
-    - DO NOT MAKE IT A MOCKUP, THERE SHOULD BE NOTHING ON THE IMAGE OTHER THAN THE SITE ALL THE WAY TO THE EDGES
-    - DO NOT INCLUDE THE BROWSER HEADER, JUST THE SITES
-    - NO BUFFER, NO BORDER, NO PADDING AROUND THE SITE CONTENT
-    - FILL THE ENTIRE 1024x1024 IMAGE EDGE TO EDGE WITH WEBSITE CONTENT ONLY
-    - DO A VERY GOOD JOB, DO NOT BE AFRAID TO BE CREATIVE
-    - ASSUME EVERYTHING THE USER ASKS FOR OR CLICKS ON EXISTS IN THE MOST INTERESTING WAY POSSIBLE
-    
-    The design should be clean, modern, and look like a real website with:
-    - A header with navigation
-    - Hero section with compelling content
-    - Well-organized sections
-    - Professional typography and spacing
-    - Modern color scheme and layout
-    - Responsive design elements
-    - High-quality, polished appearance
-    
-    Make it look like a screenshot of an actual website, not a mockup or wireframe. Fill the entire 1024x1024 image with just the website content, edge to edge, no buffer or border around the site content.`
+    // ULTRA-AGGRESSIVE prompt for edge-to-edge website generation
+    const enhancedPrompt = `CRITICAL: Generate a FULL-SCREEN website that fills EVERY PIXEL of the 1024x1024 image. ${prompt}
+
+    MANDATORY EDGE-TO-EDGE REQUIREMENTS:
+    - ABSOLUTELY NO WHITE SPACE, NO MARGINS, NO PADDING, NO BORDERS
+    - WEBSITE CONTENT MUST START AT PIXEL (0,0) AND END AT PIXEL (1024,1024)
+    - NO BROWSER CHROME, NO ADDRESS BAR, NO SCROLLBARS, NO UI ELEMENTS
+    - NO MOCKUP FRAMES, NO DEVICE FRAMES, NO SHADOWS, NO BACKGROUNDS
+    - THE WEBSITE MUST OCCUPY THE ENTIRE IMAGE CANVAS
+    - EVERY SINGLE PIXEL MUST BE PART OF THE WEBSITE CONTENT
+    - NO EMPTY SPACE ANYWHERE - FILL EVERY CORNER, EVERY EDGE
+    - WEBSITE HEADER STARTS AT THE VERY TOP (Y=0)
+    - WEBSITE FOOTER ENDS AT THE VERY BOTTOM (Y=1024)
+    - CONTENT EXTENDS TO THE LEFT EDGE (X=0) AND RIGHT EDGE (X=1024)
+    - NO GAPS, NO SPACING, NO MARGINS - PURE WEBSITE CONTENT ONLY
+    - MAKE IT LOOK LIKE A REAL WEBSITE SCREENSHOT, NOT A DESIGN MOCKUP
+    - ASSUME THE USER WANTS A COMPLETE, FUNCTIONAL WEBSITE EXPERIENCE
+    - BE CREATIVE AND INTERESTING - MAKE IT COMPELLING AND PROFESSIONAL
+    - INCLUDE ALL TYPICAL WEBSITE ELEMENTS: HEADER, NAVIGATION, HERO, CONTENT, FOOTER
+    - USE MODERN DESIGN PRINCIPLES BUT FILL THE ENTIRE SPACE
+    - NO PLACEHOLDER TEXT - USE REALISTIC, ENGAGING CONTENT
+    - MAKE IT LOOK LIKE A LIVE, FUNCTIONAL WEBSITE
+    - DO NOT CREATE DEMO SITES OR PLACEHOLDER CONTENT
+    - CREATE REAL, FUNCTIONAL WEBSITES THAT ACTUALLY EXIST
+    - BE BOLD AND CREATIVE - DON'T HOLD BACK ON FEATURES
+    - MAKE IT LOOK LIKE A REAL BUSINESS OR SERVICE WEBSITE
+    - INCLUDE REALISTIC PRICING, CONTACT INFO, AND FUNCTIONAL ELEMENTS
+    - NO "LOREM IPSUM" OR PLACEHOLDER TEXT - USE REAL CONTENT`
 
     const contents = [
       {
