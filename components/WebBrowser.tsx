@@ -55,7 +55,7 @@ export function WebBrowser() {
   const [loadingProgress, setLoadingProgress] = useState(0)
   const loadingIntervalRef = useRef<NodeJS.Timeout | null>(null)
   
-  const { generateImage, editImage } = useImageAPI()
+  const { generateImage, editImage, preSearch } = useImageAPI()
   const { analyzePrompt, isAnalyzing } = useTextAnalysis()
   const { detectClickType, isDetecting } = useClickDetection()
   const { detectInputs, isDetectingInputs } = useInputDetection()
@@ -188,8 +188,13 @@ export function WebBrowser() {
         prompt = `Professional website for ${domain}. Create a modern, clean homepage design`
       }
       
-      // Generate image based on the URL/prompt
-      const imageData = await generateImage(prompt, provider)
+      // Pre-search: let Gemini Flash decide if web search is needed for context
+      const context = await preSearch(url, prompt)
+      
+      // Generate image with context and screen dimensions
+      const screenWidth = window.innerWidth
+      const screenHeight = window.innerHeight
+      const imageData = await generateImage(prompt, provider, { context, screenWidth, screenHeight })
       
       // Detect input fields in the generated image
       const inputDetection = await detectInputs(imageData)
@@ -349,7 +354,9 @@ export function WebBrowser() {
         editPrompt = `${editPrompt}\n\nClick Analysis: ${textAnalysis}`
       }
       
-      const newImageData = await editImage(imageWithDot, editPrompt, provider)
+      const screenWidth = window.innerWidth
+      const screenHeight = window.innerHeight
+      const newImageData = await editImage(imageWithDot, editPrompt, provider, { screenWidth, screenHeight })
       
       // Detect input fields in the new image
       const inputDetection = await detectInputs(newImageData)

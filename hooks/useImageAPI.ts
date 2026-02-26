@@ -12,20 +12,59 @@ function blobToDataURL(blob: Blob): Promise<string> {
   })
 }
 
+// Get current screen dimensions
+function getScreenDimensions() {
+  if (typeof window === 'undefined') return { screenWidth: 1920, screenHeight: 1080 }
+  return {
+    screenWidth: window.innerWidth,
+    screenHeight: window.innerHeight,
+  }
+}
+
 // AI API integration for OpenAI, Gemini, and Flux
 export function useImageAPI() {
-  const generateImage = useCallback(async (prompt: string, provider?: 'openai' | 'gemini' | 'flux'): Promise<string> => {
+  // Pre-search: call Gemini Flash to optionally gather web info for a URL
+  const preSearch = useCallback(async (url: string, prompt: string): Promise<string | null> => {
     try {
-      console.log('Generating image with prompt:', prompt, 'provider:', provider)
+      const response = await fetch('/api/pre-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, prompt }),
+        signal: AbortSignal.timeout(15000), // 15 second timeout for pre-search
+      })
+      
+      if (!response.ok) return null
+      
+      const data = await response.json()
+      return data.context || null
+    } catch (error) {
+      console.warn('Pre-search failed (non-critical):', error)
+      return null
+    }
+  }, [])
+
+  const generateImage = useCallback(async (
+    prompt: string,
+    provider?: 'openai' | 'gemini' | 'flux',
+    options?: { context?: string | null; screenWidth?: number; screenHeight?: number }
+  ): Promise<string> => {
+    try {
+      const dims = getScreenDimensions()
+      const screenWidth = options?.screenWidth || dims.screenWidth
+      const screenHeight = options?.screenHeight || dims.screenHeight
       
       const response = await fetch('/api/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, provider }),
-        signal: AbortSignal.timeout(120000) // 120 seconds timeout
+        body: JSON.stringify({
+          prompt,
+          provider,
+          context: options?.context || null,
+          screenWidth,
+          screenHeight,
+        }),
+        signal: AbortSignal.timeout(120000),
       })
-      
-      console.log('Image generation response status:', response.status)
       
       if (!response.ok) {
         const errorText = await response.text()
@@ -33,19 +72,14 @@ export function useImageAPI() {
         throw new Error(`Failed to generate image: ${response.status} ${errorText}`)
       }
       
-      // Check if response is JSON (for OpenAI base64) or blob (for Gemini)
       const contentType = response.headers.get('content-type')
       
       if (contentType && contentType.includes('application/json')) {
-        // OpenAI returns JSON with imageUrl field
         const data = await response.json()
-        console.log('Received JSON response:', data)
         return data.imageUrl
       } else {
-        // Gemini returns blob
         const blob = await response.blob()
-        const dataUrl = await blobToDataURL(blob)
-        return dataUrl
+        return await blobToDataURL(blob)
       }
       
     } catch (error) {
@@ -54,17 +88,24 @@ export function useImageAPI() {
     }
   }, [])
 
-  const editImage = useCallback(async (currentImageUrl: string, editPrompt: string, provider?: 'openai' | 'gemini' | 'flux'): Promise<string> => {
+  const editImage = useCallback(async (
+    currentImageUrl: string,
+    editPrompt: string,
+    provider?: 'openai' | 'gemini' | 'flux',
+    options?: { context?: string | null; screenWidth?: number; screenHeight?: number }
+  ): Promise<string> => {
     try {
-      // If we have a blob URL, we need to fetch it and convert to base64
       let imageData = currentImageUrl
       
       if (currentImageUrl.startsWith('blob:')) {
-        // Fetch the blob and convert to data URL
         const response = await fetch(currentImageUrl)
         const blob = await response.blob()
         imageData = await blobToDataURL(blob)
       }
+
+      const dims = getScreenDimensions()
+      const screenWidth = options?.screenWidth || dims.screenWidth
+      const screenHeight = options?.screenHeight || dims.screenHeight
       
       const response = await fetch('/api/edit-image', {
         method: 'POST',
@@ -72,28 +113,26 @@ export function useImageAPI() {
         body: JSON.stringify({ 
           currentImage: imageData, 
           editPrompt,
-          provider
+          provider,
+          context: options?.context || null,
+          screenWidth,
+          screenHeight,
         }),
-        signal: AbortSignal.timeout(120000) // 120 seconds timeout
+        signal: AbortSignal.timeout(120000),
       })
       
       if (!response.ok) {
         throw new Error('Failed to edit image')
       }
       
-      // Check if response is JSON (for OpenAI base64) or blob (for Gemini)
       const contentType = response.headers.get('content-type')
       
       if (contentType && contentType.includes('application/json')) {
-        // OpenAI returns JSON with imageUrl field
         const data = await response.json()
-        console.log('Received JSON edit response:', data)
         return data.imageUrl
       } else {
-        // Gemini returns blob
         const blob = await response.blob()
-        const dataUrl = await blobToDataURL(blob)
-        return dataUrl
+        return await blobToDataURL(blob)
       }
       
     } catch (error) {
@@ -104,6 +143,7 @@ export function useImageAPI() {
 
   return {
     generateImage,
-    editImage
+    editImage,
+    preSearch,
   }
 }

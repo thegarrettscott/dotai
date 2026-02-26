@@ -8,7 +8,7 @@ const ai = new GoogleGenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt } = await request.json()
+    const { prompt, context, screenWidth, screenHeight } = await request.json()
     
     if (!prompt) {
       return NextResponse.json(
@@ -16,6 +16,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    const w = screenWidth || 1920
+    const h = screenHeight || 1080
 
     const config = {
       responseModalities: ['IMAGE', 'TEXT'],
@@ -28,20 +31,25 @@ export async function POST(request: NextRequest) {
     
     const model = 'gemini-3.1-flash-image-preview'
     
+    // Build context section if pre-search returned data
+    const contextSection = context
+      ? `\n\nREAL WEBSITE DATA (use this to make the image accurate):\n${context}`
+      : ''
+    
     // ULTRA-AGGRESSIVE prompt for edge-to-edge website generation
-    const enhancedPrompt = `CRITICAL: Generate a FULL-SCREEN website that fills EVERY PIXEL of the 1920x1080 laptop screen. ${prompt}
+    const enhancedPrompt = `CRITICAL: Generate a FULL-SCREEN website that fills EVERY PIXEL of the ${w}x${h} screen. ${prompt}${contextSection}
 
     MANDATORY EDGE-TO-EDGE REQUIREMENTS:
     - ABSOLUTELY NO WHITE SPACE, NO MARGINS, NO PADDING, NO BORDERS
-    - WEBSITE CONTENT MUST START AT PIXEL (0,0) AND END AT PIXEL (1920,1080)
+    - WEBSITE CONTENT MUST START AT PIXEL (0,0) AND END AT PIXEL (${w},${h})
     - NO BROWSER CHROME, NO ADDRESS BAR, NO SCROLLBARS, NO UI ELEMENTS
     - NO MOCKUP FRAMES, NO DEVICE FRAMES, NO SHADOWS, NO BACKGROUNDS
     - THE WEBSITE MUST OCCUPY THE ENTIRE IMAGE CANVAS
     - EVERY SINGLE PIXEL MUST BE PART OF THE WEBSITE CONTENT
     - NO EMPTY SPACE ANYWHERE - FILL EVERY CORNER, EVERY EDGE
     - WEBSITE HEADER STARTS AT THE VERY TOP (Y=0)
-    - WEBSITE FOOTER ENDS AT THE VERY BOTTOM (Y=1080)
-    - CONTENT EXTENDS TO THE LEFT EDGE (X=0) AND RIGHT EDGE (X=1920)
+    - WEBSITE FOOTER ENDS AT THE VERY BOTTOM (Y=${h})
+    - CONTENT EXTENDS TO THE LEFT EDGE (X=0) AND RIGHT EDGE (X=${w})
     - VERTICAL FILL: Ensure content spans the FULL HEIGHT from top to bottom
     - NO GAPS, NO SPACING, NO MARGINS - PURE WEBSITE CONTENT ONLY
     - FILL THE ENTIRE VERTICAL SPACE - NO EMPTY AREAS TOP OR BOTTOM

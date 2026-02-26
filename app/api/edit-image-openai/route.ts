@@ -8,7 +8,7 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { currentImage, editPrompt } = await request.json()
+    const { currentImage, editPrompt, context, screenWidth, screenHeight } = await request.json()
     
     console.log('OpenAI image edit request received')
     console.log('Edit prompt:', editPrompt)
@@ -32,15 +32,30 @@ export async function POST(request: NextRequest) {
       imageBuffer = Buffer.from(await imageResponse.arrayBuffer())
     }
 
-    console.log('Edit prompt being sent to gpt-image-1:', editPrompt)
+    const w = screenWidth || 1920
+    const h = screenHeight || 1080
+    
+    // Pick the best OpenAI size based on aspect ratio
+    const aspectRatio = w / h
+    let openaiSize: '1024x1024' | '1024x1536' | '1536x1024' | 'auto' = 'auto'
+    if (aspectRatio > 1.3) openaiSize = '1536x1024'
+    else if (aspectRatio < 0.8) openaiSize = '1024x1536'
+    else openaiSize = '1024x1024'
+
+    // Append context if available
+    const fullPrompt = context
+      ? `${editPrompt}\n\nREAL WEBSITE DATA:\n${context}`
+      : editPrompt
+
+    console.log('Edit prompt being sent to gpt-image-1.5:', fullPrompt.substring(0, 200))
     
     // Use gpt-image-1.5 with the /images/edits endpoint
     const response = await openai.images.edit({
       model: "gpt-image-1.5",
       image: new File([new Uint8Array(imageBuffer)], 'image.png', { type: 'image/png' }),
-      prompt: editPrompt,
+      prompt: fullPrompt,
       n: 1,
-      size: "1024x1024",
+      size: openaiSize,
       quality: "high",
       input_fidelity: "low", // Allow more creative changes
       background: "opaque", // Ensure solid background

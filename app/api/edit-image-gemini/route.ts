@@ -8,7 +8,7 @@ const ai = new GoogleGenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { currentImage, editPrompt } = await request.json()
+    const { currentImage, editPrompt, context, screenWidth, screenHeight } = await request.json()
     
     console.log('Gemini edit request received:')
     console.log('Edit prompt:', editPrompt)
@@ -38,14 +38,22 @@ export async function POST(request: NextRequest) {
       console.log('Image is not a data URL, using as-is')
     }
 
+    const w = screenWidth || 1920
+    const h = screenHeight || 1080
+
+    // Build context section if pre-search returned data
+    const contextSection = context
+      ? `\n\nREAL WEBSITE DATA (use this to make the image accurate):\n${context}`
+      : ''
+
     // Enhance the edit prompt with critical requirements
-    const enhancedEditPrompt = `${editPrompt}
+    const enhancedEditPrompt = `${editPrompt}${contextSection}
     
     CRITICAL REQUIREMENTS:
     - DO NOT MAKE IT A MOCKUP, THERE SHOULD BE NOTHING ON THE IMAGE OTHER THAN THE SITE ALL THE WAY TO THE EDGES
     - DO NOT INCLUDE THE BROWSER HEADER, JUST THE SITES
     - NO BUFFER, NO BORDER, NO PADDING AROUND THE SITE CONTENT
-    - FILL THE ENTIRE 1024x1024 IMAGE EDGE TO EDGE WITH WEBSITE CONTENT ONLY
+    - FILL THE ENTIRE ${w}x${h} IMAGE EDGE TO EDGE WITH WEBSITE CONTENT ONLY
     - DO A VERY GOOD JOB, DO NOT BE AFRAID TO BE CREATIVE
     - ASSUME EVERYTHING THE USER ASKS FOR OR CLICKS ON EXISTS IN THE MOST INTERESTING WAY POSSIBLE
     
@@ -56,7 +64,7 @@ export async function POST(request: NextRequest) {
     - NEVER SHOW "SIGN IN", "LOG IN", OR AUTHENTICATION SCREENS
     - PROCEED DIRECTLY TO THE AUTHENTICATED CONTENT
     
-    Fill the entire 1024x1024 image with just the website content, edge to edge, no buffer or border around the site content.`
+    Fill the entire ${w}x${h} image with just the website content, edge to edge, no buffer or border around the site content.`
 
     const contents = [
       {
