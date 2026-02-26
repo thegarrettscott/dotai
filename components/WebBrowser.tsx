@@ -52,6 +52,8 @@ export function WebBrowser() {
   const [clickPosition, setClickPosition] = useState<{x: number, y: number} | null>(null)
   const [inputValues, setInputValues] = useState<{ [key: number]: string }>({})
   const [showHistory, setShowHistory] = useState(false)
+  const [loadingProgress, setLoadingProgress] = useState(0)
+  const loadingIntervalRef = useRef<NodeJS.Timeout | null>(null)
   
   const { generateImage, editImage } = useImageAPI()
   const { analyzePrompt, isAnalyzing } = useTextAnalysis()
@@ -129,6 +131,36 @@ export function WebBrowser() {
     })
   }, [inputValues, currentSession])
   
+  // Start the loading progress bar animation
+  const startLoadingProgress = useCallback(() => {
+    setLoadingProgress(0)
+    if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current)
+    
+    let progress = 0
+    loadingIntervalRef.current = setInterval(() => {
+      progress += Math.random() * 8 + 2 // Random increment between 2-10
+      if (progress >= 90) {
+        progress = 90 // Cap at 90% until actually done
+        if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current)
+      }
+      setLoadingProgress(progress)
+    }, 300)
+  }, [])
+
+  // Complete the loading progress bar
+  const completeLoadingProgress = useCallback(() => {
+    if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current)
+    setLoadingProgress(100)
+    setTimeout(() => setLoadingProgress(0), 400) // Hide after completion animation
+  }, [])
+
+  // Clean up interval on unmount
+  useEffect(() => {
+    return () => {
+      if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current)
+    }
+  }, [])
+
   // Initialize with blank state - no automatic Google homepage generation
   useEffect(() => {
     // Start with empty state - user will type URL to begin
@@ -144,6 +176,7 @@ export function WebBrowser() {
     try {
       setIsLoading(true)
       setError(null)
+      startLoadingProgress()
       
       // Create a prompt based on the URL
       let prompt = ''
@@ -182,18 +215,15 @@ export function WebBrowser() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to navigate to URL')
     } finally {
+      completeLoadingProgress()
       setIsLoading(false)
     }
   }
 
   const handleUrlSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Form submitted with URL:', urlInput)
     if (urlInput.trim()) {
-      console.log('Navigating to:', urlInput.trim())
       navigateToUrl(urlInput.trim())
-    } else {
-      console.log('URL input is empty')
     }
   }
 
@@ -229,6 +259,7 @@ export function WebBrowser() {
     try {
       setIsLoading(true)
       setError(null)
+      startLoadingProgress()
       
       // Create image with text overlay
       const imageWithDot = await createImageWithTextOverlay(currentSession.imageUrl, x, y)
@@ -255,6 +286,7 @@ export function WebBrowser() {
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process click')
+      completeLoadingProgress()
       setIsLoading(false)
     }
   }
@@ -343,6 +375,7 @@ export function WebBrowser() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to edit image')
     } finally {
+      completeLoadingProgress()
       setIsLoading(false)
     }
   }
@@ -432,13 +465,7 @@ export function WebBrowser() {
             <input
               type="text"
               value={urlInput}
-              onChange={(e) => {
-                console.log('Input onChange triggered:', e.target.value)
-                setUrlInput(e.target.value)
-              }}
-              onInput={(e) => {
-                console.log('Input onInput triggered:', (e.target as HTMLInputElement).value)
-              }}
+              onChange={(e) => setUrlInput(e.target.value)}
               placeholder="Enter URL or search term..."
               disabled={isLoading}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 text-black"
@@ -452,32 +479,25 @@ export function WebBrowser() {
             </button>
           </form>
           
-          {/* Test button */}
-          <button
-            onClick={() => {
-              console.log('Test button clicked')
-              navigateToUrl('google.com')
-            }}
-            className="ml-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            Test
-          </button>
           
 
         </div>
       </div>
       
-      {/* Loading Indicator */}
-      {(isLoading || isDetectingInputs) && (
-        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 flex-shrink-0">
-          <div className="flex items-center space-x-2">
-            <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-            <span className="text-blue-600 text-sm">
-              {isLoading ? 'Loading Website' : 'Detecting input fields...'}
-            </span>
-          </div>
-        </div>
-      )}
+      {/* Network Loading Progress Bar */}
+      <div className="relative flex-shrink-0" style={{ height: loadingProgress > 0 ? '3px' : '0px' }}>
+        {loadingProgress > 0 && (
+          <div
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 via-blue-400 to-blue-600"
+            style={{
+              width: `${loadingProgress}%`,
+              transition: loadingProgress === 100 ? 'width 0.2s ease-out, opacity 0.3s ease-out' : 'width 0.4s ease-out',
+              opacity: loadingProgress === 100 ? 0 : 1,
+              boxShadow: '0 0 8px rgba(59, 130, 246, 0.6), 0 0 4px rgba(59, 130, 246, 0.4)',
+            }}
+          />
+        )}
+      </div>
       
       {/* Error Display */}
       {error && (
@@ -497,6 +517,7 @@ export function WebBrowser() {
               alt={`Website: ${currentSession.url}`}
               className="w-full h-full object-cover cursor-pointer"
               onClick={(e) => {
+                if (isLoading) return // Prevent clicks while loading
                 // Check if click is on an input field
                 const rect = e.currentTarget.getBoundingClientRect()
                 const x = ((e.clientX - rect.left) / rect.width) * 100
@@ -518,9 +539,25 @@ export function WebBrowser() {
               }}
               style={{ 
                 minHeight: '100%',
-                objectFit: 'contain'
+                objectFit: 'contain',
+                filter: isLoading ? 'blur(6px) brightness(0.85)' : 'none',
+                transition: 'filter 0.4s ease-in-out',
+                pointerEvents: isLoading ? 'none' : 'auto',
               }}
             />
+            
+            {/* Loading overlay with spinner */}
+            {isLoading && (
+              <div 
+                className="absolute inset-0 flex items-center justify-center"
+                style={{ pointerEvents: 'none' }}
+              >
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-8 py-5 shadow-xl flex items-center space-x-4">
+                  <div className="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" style={{ borderWidth: '3px' }}></div>
+                  <span className="text-gray-700 font-medium text-sm">Loading page...</span>
+                </div>
+              </div>
+            )}
             
             {/* Interactive Input Fields */}
             {currentSession.inputFields.map((input, index) => (
