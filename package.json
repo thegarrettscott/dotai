@@ -10,7 +10,7 @@
     "export": "next build && next export"
   },
   "dependencies": {
-    "@google/genai": "^1.15.0",
+    "@google/genai": "^1.34.0",
     "@google/generative-ai": "^0.2.1",
     "@supabase/supabase-js": "^2.39.0",
     "autoprefixer": "^10.0.1",

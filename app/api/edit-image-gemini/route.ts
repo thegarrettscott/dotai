@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       responseModalities: ['IMAGE', 'TEXT'],
     }
     
-    const model = 'gemini-2.5-flash-image-preview'
+    const model = 'gemini-3.1-flash-image-preview'
     
     // Convert the current image URL to base64 if it's a data URL
     let imageData = currentImage
@@ -48,6 +48,13 @@ export async function POST(request: NextRequest) {
     - FILL THE ENTIRE 1024x1024 IMAGE EDGE TO EDGE WITH WEBSITE CONTENT ONLY
     - DO A VERY GOOD JOB, DO NOT BE AFRAID TO BE CREATIVE
     - ASSUME EVERYTHING THE USER ASKS FOR OR CLICKS ON EXISTS IN THE MOST INTERESTING WAY POSSIBLE
+    
+    LOGIN PAGE HANDLING:
+    - SKIP ALL LOGIN PAGES - DO NOT GENERATE LOGIN OR SIGN-IN SCREENS
+    - IF THE USER CLICKS A LOGIN BUTTON OR REQUESTS A PAGE THAT WOULD NORMALLY REQUIRE LOGIN, ASSUME THEY ARE ALREADY LOGGED IN
+    - SHOW THE LOGGED-IN VERSION OF THE PAGE (DASHBOARD, ACCOUNT PAGE, MAIN CONTENT)
+    - NEVER SHOW "SIGN IN", "LOG IN", OR AUTHENTICATION SCREENS
+    - PROCEED DIRECTLY TO THE AUTHENTICATED CONTENT
     
     Fill the entire 1024x1024 image with just the website content, edge to edge, no buffer or border around the site content.`
 

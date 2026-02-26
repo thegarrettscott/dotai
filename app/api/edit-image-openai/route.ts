@@ -34,9 +34,9 @@ export async function POST(request: NextRequest) {
 
     console.log('Edit prompt being sent to gpt-image-1:', editPrompt)
     
-    // Use gpt-image-1 with the /images/edits endpoint
+    // Use gpt-image-1.5 with the /images/edits endpoint
     const response = await openai.images.edit({
-      model: "gpt-image-1",
+      model: "gpt-image-1.5",
       image: new File([new Uint8Array(imageBuffer)], 'image.png', { type: 'image/png' }),
       prompt: editPrompt,
       n: 1,

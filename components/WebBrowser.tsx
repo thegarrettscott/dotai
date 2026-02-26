@@ -188,8 +188,12 @@ export function WebBrowser() {
 
   const handleUrlSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('Form submitted with URL:', urlInput)
     if (urlInput.trim()) {
+      console.log('Navigating to:', urlInput.trim())
       navigateToUrl(urlInput.trim())
+    } else {
+      console.log('URL input is empty')
     }
   }
 
@@ -428,7 +432,13 @@ export function WebBrowser() {
             <input
               type="text"
               value={urlInput}
-              onChange={(e) => setUrlInput(e.target.value)}
+              onChange={(e) => {
+                console.log('Input onChange triggered:', e.target.value)
+                setUrlInput(e.target.value)
+              }}
+              onInput={(e) => {
+                console.log('Input onInput triggered:', (e.target as HTMLInputElement).value)
+              }}
               placeholder="Enter URL or search term..."
               disabled={isLoading}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 text-black"
@@ -441,6 +451,17 @@ export function WebBrowser() {
               Go
             </button>
           </form>
+          
+          {/* Test button */}
+          <button
+            onClick={() => {
+              console.log('Test button clicked')
+              navigateToUrl('google.com')
+            }}
+            className="ml-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Test
+          </button>
           
 
         </div>

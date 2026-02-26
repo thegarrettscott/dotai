@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    const model = 'gemini-2.5-flash-image-preview'
+    const model = 'gemini-3.1-flash-image-preview'
     
     // ULTRA-AGGRESSIVE prompt for edge-to-edge website generation
     const enhancedPrompt = `CRITICAL: Generate a FULL-SCREEN website that fills EVERY PIXEL of the 1920x1080 laptop screen. ${prompt}
@@ -57,7 +57,14 @@ export async function POST(request: NextRequest) {
     - BE BOLD AND CREATIVE - DON'T HOLD BACK ON FEATURES
     - MAKE IT LOOK LIKE A REAL BUSINESS OR SERVICE WEBSITE
     - INCLUDE REALISTIC PRICING, CONTACT INFO, AND FUNCTIONAL ELEMENTS
-    - NO "LOREM IPSUM" OR PLACEHOLDER TEXT - USE REAL CONTENT`
+    - NO "LOREM IPSUM" OR PLACEHOLDER TEXT - USE REAL CONTENT
+    
+    LOGIN PAGE HANDLING:
+    - SKIP ALL LOGIN PAGES - DO NOT GENERATE LOGIN OR SIGN-IN SCREENS
+    - IF THE USER REQUESTS A PAGE THAT WOULD NORMALLY REQUIRE LOGIN, SHOW THE LOGGED-IN VERSION
+    - ASSUME THE USER IS ALREADY AUTHENTICATED AND LOGGED IN
+    - SHOW THE MAIN CONTENT/DASHBOARD/ACCOUNT PAGE INSTEAD OF LOGIN FORMS
+    - NEVER SHOW "SIGN IN", "LOG IN", OR AUTHENTICATION SCREENS`
 
     const contents = [
       {
