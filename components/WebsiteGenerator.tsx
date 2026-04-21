@@ -272,7 +272,7 @@ export function WebsiteGenerator() {
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              OpenAI GPT-Image-1
+              OpenAI GPT-Image-2
             </button>
             <button
               onClick={() => setProvider('gemini')}
@@ -351,7 +351,7 @@ export function WebsiteGenerator() {
         
         <div className="mt-2 text-xs text-gray-500">
           {provider === 'openai' 
-            ? 'Using OpenAI GPT-Image-1 for high-quality website generation'
+            ? 'Using OpenAI GPT-Image-2 for high-quality website generation'
             : provider === 'flux'
             ? 'Using Flux Dev for cutting-edge website generation and evolution'
             : 'Using Google Gemini for AI-powered image generation'

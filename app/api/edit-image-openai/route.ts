@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     
     // Use gpt-image-1.5 with the /images/edits endpoint
     const response = await openai.images.edit({
-      model: "gpt-image-1.5",
+      model: "gpt-image-2",
       image: new File([new Uint8Array(imageBuffer)], 'image.png', { type: 'image/png' }),
       prompt: fullPrompt,
       n: 1,

@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     - NEVER SHOW "SIGN IN", "LOG IN", OR AUTHENTICATION SCREENS`
 
     const response = await openai.images.generate({
-      model: "gpt-image-1.5",
+      model: "gpt-image-2",
       prompt: enhancedPrompt,
       n: 1,
       size: openaiSize,
