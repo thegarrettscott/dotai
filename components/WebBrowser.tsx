@@ -516,13 +516,13 @@ export function WebBrowser() {
       )}
       
       {/* Website Display */}
-      <div className="flex-1 bg-white overflow-auto">
+      <div className="flex-1 bg-white overflow-hidden min-h-0">
         {currentSession ? (
-          <div className="relative w-full aspect-[16/9] overflow-hidden">
+          <div className="relative w-full h-full overflow-hidden">
             <img
               src={currentSession.imageUrl}
               alt={`Website: ${currentSession.url}`}
-              className="w-full h-full object-cover cursor-pointer"
+              className="w-full h-full object-cover cursor-pointer block"
               onClick={(e) => {
                 if (isLoading) return // Prevent clicks while loading
                 // Check if click is on an input field
@@ -545,8 +545,7 @@ export function WebBrowser() {
                 }
               }}
               style={{ 
-                minHeight: '100%',
-                objectFit: 'contain',
+                objectFit: 'cover',
                 filter: isLoading ? 'blur(6px) brightness(0.85)' : 'none',
                 transition: 'filter 0.4s ease-in-out',
                 pointerEvents: isLoading ? 'none' : 'auto',
